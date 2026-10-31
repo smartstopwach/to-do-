@@ -37,8 +37,8 @@
 const STORE_KEY='studyCommand.v1';
 const DEFAULTS={start:'2026-11-02',end:'2026-12-30',selfStudy:6,liveHours:4,lecHours:2,revHours:1,catchupHours:2,snHours:3,testHours:1,dppMin:25,pyqMin:2,anchorOverride:''};
 const PHYSICS=[
- {code:'P2',name:'Electrostatic Potential & Capacitance',lec:0,sn:1,dpp:3,pyq:72,test:1},
- {code:'P3',name:'Current Electricity',lec:0,sn:1,dpp:5,pyq:78,test:1},
+ {code:'P2',name:'Electrostatic Potential & Capacitance',lec:0,sn:1,dpp:9,pyq:72,test:1},
+ {code:'P3',name:'Current Electricity',lec:0,sn:1,dpp:5,pyq:129,test:1},
  {code:'P4',name:'Moving Charges & Magnetism',lec:0,sn:1,dpp:6,pyq:98,test:1},
  {code:'P5',name:'Magnetism & Matter',lec:0,sn:1,dpp:2,pyq:34,test:1},
  {code:'P6',name:'Electromagnetic Induction',lec:0,sn:1,dpp:4,pyq:50,test:1},
@@ -46,9 +46,9 @@ const PHYSICS=[
  {code:'P8',name:'Electromagnetic Waves',lec:0,sn:1,dpp:0,pyq:0,test:1}
 ];
 const ORGANIC=[
- {code:'O1',name:'Optical Isomerism',lec:0,sn:1,dpp:0,pyq:0,test:1},
- {code:'O2',name:'Haloalkanes and Haloarenes',lec:0,sn:1,dpp:15,pyq:59,test:1},
- {code:'O3',name:'Alcohols, Phenols and Ethers',lec:4,sn:1,dpp:9,pyq:74,test:1},
+ {code:'O1',name:'Optical Isomerism',lec:13,sn:1,dpp:10,pyq:0,test:1},
+ {code:'O2',name:'Haloalkanes and Haloarenes',lec:19,sn:1,dpp:15,pyq:59,test:1},
+ {code:'O3',name:'Alcohols, Phenols and Ethers',lec:12,sn:1,dpp:10,pyq:74,test:1},
  {code:'O4',name:'Aldehydes, Ketones and Carboxylic Acids',lec:10,sn:1,dpp:9,pyq:122,test:1},
  {code:'O5',name:'Amines',lec:4,sn:1,dpp:4,pyq:57,test:1},
  {code:'O6',name:'Biomolecules',lec:3,sn:1,dpp:2,pyq:71,test:1},
@@ -66,9 +66,10 @@ function revisionTopic(date){const topics=['Physics Ch 1 · Electric Charges and
 function fmt(n){const x=Number(n)||0;return `${Number(x.toFixed(2))}h`}
 function safe(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function uid(){return 'C'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
-function defaults(){return {settings:{...DEFAULTS},days:{},log:[],custom:[]}}
+function seedBaseline(s,force=false){if(!force&&Number(s.settings?._progressSeedRevision)>=2)return s;const targets={'P2-sn':1,'P2-dpp':6,'P3-pyq':51,'O1-lec':13,'O1-dpp':10,'O2-lec':19,'O3-lec':8,'O3-dpp':1};const benchmarks={...DEFAULTS,...s.settings};for(const [id,want] of Object.entries(targets)){const have=s.log.filter(x=>x.kind===id).reduce((a,x)=>a+(Number(x.qty)||0),0),qty=Math.max(0,want-have);if(!qty)continue;const [code,kind]=id.split('-'),ch=[...PHYSICS,...ORGANIC].find(x=>x.code===code);s.log.push({id:`seed-v2-${id}`,kind:id,qty,h:taskHours(kind,qty,benchmarks),day:'2026-11-01',label:`${code} · ${ch.name} — ${TASK_NAMES[kind]}`,subj:code[0]==='P'?'Physics':'OC'})}s.settings._progressSeedRevision=2;return s}
+function defaults(){return seedBaseline({settings:{...DEFAULTS},days:{},log:[],custom:[]})}
 function loadState(){try{const raw=localStorage.getItem(STORE_KEY);if(raw){const parsed=JSON.parse(raw);return normalize(parsed)}}catch(e){console.warn('Local storage read nahi hua',e)}return defaults()}
-function normalize(s){const d=defaults();if(!s||typeof s!=='object')return d;return {settings:{...d.settings,...(s.settings||{})},days:s.days&&typeof s.days==='object'?s.days:{},log:Array.isArray(s.log)?s.log:[],custom:Array.isArray(s.custom)?s.custom:[]}}
+function normalize(s){const d=defaults();if(!s||typeof s!=='object')return d;const out={settings:{...d.settings,...(s.settings||{})},days:s.days&&typeof s.days==='object'?s.days:{},log:Array.isArray(s.log)?s.log:[],custom:Array.isArray(s.custom)?s.custom:[]};return Number(s.settings?._progressSeedRevision)>=2?out:seedBaseline(out,true)}
 function save(){try{localStorage.setItem(STORE_KEY,JSON.stringify(state))}catch(e){toast('Save nahi ho paya — browser storage check karein.')}}
 function doneQty(id){return state.log.filter(x=>x.kind===id).reduce((a,x)=>a+(Number(x.qty)||0),0)}
 function doneHours(date){return state.log.filter(x=>x.day===date).reduce((a,x)=>a+(Number(x.h)||0),0)}
